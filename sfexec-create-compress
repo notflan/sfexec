@@ -1,0 +1,11 @@
+#!/bin/bash
+
+sfexec-create "$@" || exit 1
+
+echo "Compressing..."
+gzip sfexec || exit 1
+
+sfexec-create -s -e 'gzip -d %location/sfexec.gz && chmod +x %location/sfexec && %location/sfexec %args' sfexec.gz > /dev/null || exit 1
+
+rm sfexec.gz
+echo "Done."

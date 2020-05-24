@@ -1,0 +1,17 @@
+#!/bin/bash
+
+SCRIPTLINK=$(readlink -f "$0")
+SCRIPTPATH="$( cd "$(dirname "$SCRIPTLINK")" >/dev/null 2>&1 ; pwd -P )"
+
+dotnet run --project "$SCRIPTPATH/generator" -o "$SCRIPTPATH/file.h" "$@" || exit 1
+
+
+[[ -f "$SCRIPTPATH/file.h" ]] || exit 1
+
+echo "Compiling binary..."
+
+g++ -I$SCRIPTPATH/include/ -w --std=c++17 "$SCRIPTPATH/main.cpp" "$SCRIPTPATH/sha256_literal/sha256.cpp" -o sfexec
+
+rm "$SCRIPTPATH/file.h"
+
+echo "Complete."
