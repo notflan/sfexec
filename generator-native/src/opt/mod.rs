@@ -20,6 +20,16 @@ impl Options
     {
 	Self(HashSet::new())
     }
+    pub fn find<'a, T,F>(&'a self, pred: F) -> Option<T>
+    where F: Fn(&'a Opt) -> Option<T>
+    {
+	for opt in self.0.iter() {
+	    if let Some(ret) = pred(opt) {
+		return Some(ret);
+	    }
+	}
+	None
+    }
 
     pub fn has_tag(&self, opt: &Opt) -> bool {
 	for x in self.0.iter() {
