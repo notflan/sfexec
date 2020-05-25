@@ -3,36 +3,23 @@ use std::{
 	Read,
     },
 };
-use heaparray::{
-    heap,
-};
 
-pub struct BufferedReadIter<F>
-where F: Read
-{
-    iter: F,
-    buffer: Box<[u8]>,
-    buffer_len: usize,
-}
+pub struct ByteIter<F: Read>
+    (F, [u8; 1]);
 
-impl<F: Read> Iterator for BufferedReadIter<F>
+impl<T> Iterator for ByteIter<T>
+where T: Read
 {
-    type Item = Box<[u8]>;
+    type Item = u8;
 
     fn next(&mut self) -> Option<Self::Item>
     {
-	if self.buffer_len >= self.buffer.len() {
-	    // Buffer is full.
-	    return Some(self.swap_out());
-	}
-	
-	if let Ok(read) = self.iter.read(&mut self.buffer[self.buffer_len..])
+	if let Ok(read) = self.0.read(&mut self.1[..])
 	{
-	    self.buffer_len += read;
-	    if self.buffer_len ==0 {
+	    if read < 1 {
 		None
 	    } else {
-		Some(self.swap_out())
+		Some(self.1[0])
 	    }
 	} else {
 	    None
@@ -40,32 +27,19 @@ impl<F: Read> Iterator for BufferedReadIter<F>
     }
 }
 
-impl<F: Read> BufferedReadIter<F>
+impl<T> ByteIter<T>
+where T: Read
 {
-    fn swap_out(&mut self) -> Box<[u8]>
-    {
-	let len = self.buffer_len;
-	self.buffer_len=0;
-
-	heaparray::box_slice(&mut self.buffer[..len])
-    }
-
-    pub fn new(iter: F, buffer_len: usize) -> Self {
-	let buffer = heap![u8; buffer_len].into_box();
-	Self {
-	    iter,
-	    buffer_len: 0,
-	    buffer,
-	}
+    fn new(stream: T) -> Self {
+	Self(stream, [0u8; 1])
     }
 }
 
-pub trait ReadIterExt: Read + Sized
+pub trait ByteIterExt: Read + Sized
 {
-    fn into_iter(self, buffer_len: usize) -> BufferedReadIter<Self>
+    fn into_byte_iter(self) -> ByteIter<Self>
     {
-	BufferedReadIter::new(self, buffer_len)
+	ByteIter::new(self)
     }
 }
-impl<T: Read> ReadIterExt for T{}
-
+impl<T: Read> ByteIterExt for T{}

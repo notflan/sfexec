@@ -4,3 +4,4 @@ bin/
 obj/
 sha256_literal/
 **/target/
+test.txt
