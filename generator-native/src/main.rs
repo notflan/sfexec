@@ -8,6 +8,7 @@ use std::{
     },
     io::{self, Write,Read,},
     error::Error,
+    path::{Path,},
 };
 
 mod iter;
@@ -40,18 +41,34 @@ where From: Read,
 {
     let mut count =0;
     for buf in from.into_iter(8)
-	.map(|byte| {
-	    count += 1;
-	    byte
-	})
 	.map(|byte| format!("0x{:02x},", byte))
 	.group_at(8)
+	.map(|bytes| {
+	    count += bytes.len();
+	    bytes
+	})
 	.map(|strs| format!("\t{}", strs.join(" ")))
     {
-	println!("{}", buf);
+	writeln!(to, "{}", buf)?;
     }
 
     Ok(count)
+}
+
+fn attempt_get_name<'a, P>(path: &'a P) -> Result<&'a str, &'static str>
+    where P: AsRef<Path> + ?Sized
+{
+    let path = path.as_ref();
+    if let Some(path) = path.file_name() {
+	if let Some(file_name) = path.to_str() {
+	    Ok(file_name)
+	}
+	else {
+	    Err("Invalid unicode in filename")
+	}
+    } else {
+	Err("No filename, are you trying to add a directory?")
+    }
 }
 
 fn main() -> Result<(), Box<dyn Error>>{
@@ -87,6 +104,7 @@ fn main() -> Result<(), Box<dyn Error>>{
 	    let mut fp = OpenOptions::new()
 		.write(true)
 		.truncate(true)
+		.create(true)
 		.open(output)?;
 
 	    if silent {
@@ -108,13 +126,58 @@ fn main() -> Result<(), Box<dyn Error>>{
 	    writeln!(fp, "constexpr const unsigned char DATA[] = {{")?;
 
 	    for file in files.iter() {
-		let rfp = OpenOptions::new()
+		print!(" + {}", file);
+		let file = OpenOptions::new()
 		    .read(true)
 		    .open(file)?;
-		print!(" + {}", file);
 
-		sizes.push(write_file(rfp, &mut fp)?);
+		sizes.push(match write_file(file, &mut fp) {
+		    Ok(size) => {
+			println!(" OK");
+			size
+		    },
+		    Err(error) => {
+			println!(" FAILED: {}",error);
+			return Err("state corrupted: cannot continue after mid-failed write.")?;
+		    },
+		});
 	    }
+	    writeln!(fp, "}};")?;
+	    println!("Adding lengths...");
+
+	    writeln!(fp, "constexpr const long DATA_LENGTHS[DATA_COUNT] = {{")?;
+	    for size in sizes.into_iter() {
+		write!(fp, "\t{}ll,", size)?;
+		
+	    }
+	    writeln!(fp, "\n}};")?;
+
+	    println!("Adding names...");
+
+	    writeln!(fp, "constexpr const char* const DATA_NAMES[DATA_COUNT] = {{")?;
+	    for file in files.into_iter() {
+		let file = Path::new(&file);
+		print!(" - {:?}", file);
+		let file = match attempt_get_name(&file) {
+		    Ok(file) => file,
+		    Err(error) => {
+			println!(" FAILED: pathspec: {}", error);
+
+			return Err("name write failed, aborting.")?;
+		    }
+		};
+		
+		match write!(fp, "\t\"{}\",", translate::c_escape(file)) {
+		    Err(error) => {
+			println!(" FAILED: write: {}", error);
+
+			return Err("name write failed, aborting.")?;
+		    },
+		    _ => (),
+		};
+		println!(" OK");
+	    }
+	    writeln!(fp, "\n}};")?;
 	},
 	arg::OperationMode::Help => {
 	    usage();
