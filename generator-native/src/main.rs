@@ -22,6 +22,12 @@ mod arg;
 
 use opt::Opt;
 
+macro_rules! flush {
+    () => {
+	std::io::stdout().flush().ok().expect("fatal: could not flush stdout")
+    }
+}
+
 fn usage() -> ! {
     let prog = &arg::program_name();
     println!("Usage: {} [-s] [-e <exec string>] [-o <output file>] [-] <files...>", prog);
@@ -115,8 +121,8 @@ fn main() -> Result<(), Box<dyn Error>>{
 
 	    if let Some(exec) = exec {
 		let exec = translate::c_escape(exec);
-		writeln!(fp, "constexpr const char* const DATA_EXEC_AFTER = {};", exec)?;
-		writeln!(fp, "static constexpr auto DATA_EXEC_AFTER_HASH = {}_sha256;", exec)?;
+		writeln!(fp, "constexpr const char* const DATA_EXEC_AFTER = \"{}\";", exec)?;
+		writeln!(fp, "static constexpr auto DATA_EXEC_AFTER_HASH = \"{}\"_sha256;", exec)?;
 	    } else {
 		writeln!(fp, "constexpr const char* const DATA_EXEC_AFTER = nullptr;")?;
 		writeln!(fp, "static constexpr auto DATA_EXEC_AFTER_HASH = \"unbound\"_sha256;")?;
@@ -127,6 +133,7 @@ fn main() -> Result<(), Box<dyn Error>>{
 
 	    for file in files.iter() {
 		print!(" + {}", file);
+		flush!();
 		let file = OpenOptions::new()
 		    .read(true)
 		    .open(file)?;
@@ -158,6 +165,7 @@ fn main() -> Result<(), Box<dyn Error>>{
 	    for file in files.into_iter() {
 		let file = Path::new(&file);
 		print!(" - {:?}", file);
+		flush!();
 		let file = match attempt_get_name(&file) {
 		    Ok(file) => file,
 		    Err(error) => {
