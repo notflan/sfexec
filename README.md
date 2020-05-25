@@ -41,7 +41,7 @@ The post extraction hook is passed to `/bin/sh`, with some input changes:
 |-------------|-------------------------------------------------------------------------------------------------------|
 | `%location` | The directory root that the files are extracted to                                                    |
 | `%argc`     | The number of command line arguments passed to `sfexec`                                               |
-| `%argv`     | A list of all args passed to `sfexec`                                                                 |
+| `%args`     | A list of all args passed to `sfexec`                                                                 |
 | `%arg[n]`   | The `n`th argument passed to `sfexec`, if `n` is outside the range of arguments, nothing is replaced. |
 
 ## Building
