@@ -3,6 +3,7 @@ use crate::{
 };
 
 pub enum OperationMode {
+    Version(bool),
     Normal(Options, Vec<String>),
     Help,
 }
@@ -21,6 +22,12 @@ pub fn parse() -> Result<OperationMode, &'static str>
 	match arg.as_str() {
 	    "-h" if i == 1 => {
 		return Ok(OperationMode::Help);
+	    },
+	    "-v" if i==1 => {
+		return Ok(OperationMode::Version(false));
+	    },
+	    "-V" if i==1 => {
+		return Ok(OperationMode::Version(true));
 	    },
 	    "-s" if look => {
 		opt |= Opt::Silent;

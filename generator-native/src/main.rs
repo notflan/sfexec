@@ -28,13 +28,28 @@ macro_rules! flush {
     }
 }
 
+fn version(verbose: bool)
+{
+    if verbose {
+	println!("sfexec-generator-native verison: {}", env!("CARGO_PKG_VERSION"));
+	println!("author: {} (https://flanchan.moe/)", env!("CARGO_PKG_AUTHORS"));
+	println!("license: GPL 3.0\n");
+    } else {
+	print!("{}", env!("CARGO_PKG_VERSION"));
+    }
+}
+
 fn usage() -> ! {
     let prog = &arg::program_name();
+    version(true);
     println!("Usage: {} [-s] [-e <exec string>] [-o <output file>] [-] <files...>", prog);
     println!("Usage: {} -h", prog);
+    println!("Usage: {} -v|-V", prog);
     println!();
-    println!(" -\t\tStop reading options.");
     println!(" -h\t\tPrint this message.");
+    println!(" -v\t\tPrint version.");
+    println!(" -V\t\tPrint program info.");
+    println!(" -\t\tStop reading options.");
     println!(" -s\t\tSilent mode.");
     println!(" -e <exec>\tScript to run after extraction.");
     println!(" -o <file>\tOutput filename.");
@@ -62,7 +77,7 @@ where From: Read,
 }
 
 fn attempt_get_name<'a, P>(path: &'a P) -> Result<&'a str, &'static str>
-    where P: AsRef<Path> + ?Sized
+where P: AsRef<Path> + ?Sized
 {
     let path = path.as_ref();
     if let Some(path) = path.file_name() {
@@ -77,23 +92,8 @@ fn attempt_get_name<'a, P>(path: &'a P) -> Result<&'a str, &'static str>
     }
 }
 
-fn main() -> Result<(), Box<dyn Error>>{
-
-    /*let file = OpenOptions::new()
-	.read(true)
-	.open("test.txt")?;
-
-
-    println!("{{");
-    for buf in file.into_iter(4)
-	.map(|byte| format!("0x{:02x},", byte))
-	.group_at(4)
-	.map(|strs| format!("\t{}", strs.join(" ")))
-    {
-	println!("{}", buf);
-    }
-    println!("}}");*/
-
+fn main() -> Result<(), Box<dyn Error>>
+{
     match arg::parse()? {
 	arg::OperationMode::Normal(options, files) => {
 	    let output = options.find(|opt| match opt {
@@ -189,6 +189,9 @@ fn main() -> Result<(), Box<dyn Error>>{
 	},
 	arg::OperationMode::Help => {
 	    usage();
+	},
+	arg::OperationMode::Version(verbose) => {
+	    version(verbose);
 	},
     };
 
