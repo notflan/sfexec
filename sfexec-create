@@ -3,7 +3,8 @@
 SCRIPTLINK=$(readlink -f "$0")
 SCRIPTPATH="$( cd "$(dirname "$SCRIPTLINK")" >/dev/null 2>&1 ; pwd -P )"
 
-dotnet run --project "$SCRIPTPATH/generator" -o "$SCRIPTPATH/file.h" "$@" || exit 1
+#dotnet run --project "$SCRIPTPATH/generator" -o "$SCRIPTPATH/file.h" "$@" || exit 1
+$SCRIPTPATH/generator -o "$SCRIPTPATH/file.h" "$@" || exit 1
 
 
 [[ -f "$SCRIPTPATH/file.h" ]] || exit 1

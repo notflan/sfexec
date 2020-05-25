@@ -4,7 +4,7 @@ extern crate heaparray;
 
 use std::{
     fs::{
-	self, File, OpenOptions,
+	OpenOptions,
     },
     io::{self, Write,Read,},
     error::Error,
