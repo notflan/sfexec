@@ -43,7 +43,6 @@ where I: Iterator<Item=T>
     }
 }
 
-use super::*;
 pub trait GroupExt: Iterator + Sized {
     fn group_at(self, at: usize) -> GroupIter<<Self as Iterator>::Item, Self>
     {
