@@ -46,6 +46,10 @@ The post extraction hook is passed to `/bin/sh`, with some input changes:
 
 ## Building
 To build the `sfexec` binary, g++ is used, along with [sha256_literal] for verifying the post-extraction hook.
+To clone `sha256_literal` run:
+``` shell
+$ make deps
+```
 Included in the repo is a pre-built generator binary, signed with [my GPG key] at `generator-v<version>.gpg` with a checksum in `generator-v<version>.sha256`. Alternatively you can build it yourself like so:
 
 [sha256_literal]: https://github.com/aguinet/sha256_literal

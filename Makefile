@@ -1,6 +1,11 @@
 VERSION:= v0.1.0
 
-all: clean sign trust
+all: clean deps sign trust
+
+deps:
+	if [[ ! -d sha256_literal ]]; then \
+		git clone https://github.com/aguinet/sha256_literal || exit 1; \
+	fi
 
 trust:
 	if [[ ! -f generator-$(VERSION) ]]; then \
