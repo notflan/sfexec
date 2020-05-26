@@ -134,6 +134,31 @@ const unsigned char* get_data(int i)
   return data;
 }
 
+template<typename Path>
+struct DirTree
+{
+  const Path path;
+  DirTree(const Path input): path(input)
+  {
+    fs::create_directory(input);
+  }
+
+  ~DirTree()
+  {
+    fs::remove_all(path);
+  }
+
+  Path& operator &()
+  {
+    return path;
+  }
+
+  operator Path()
+  {
+    return path;
+  }
+};
+
 int main(int argc,char** argv)
 {
   auto path = fs::temp_directory_path() / get_uuid();
@@ -150,7 +175,7 @@ int main(int argc,char** argv)
   cout << "Extracting " << DATA_COUNT <<  " files to " << path << "...\n";
 #endif
 
-  fs::create_directory(path);
+  DirTree tree(path);
   for(int i=0;i<DATA_COUNT;i++)
     {
       auto data = get_data(i);
@@ -162,7 +187,7 @@ int main(int argc,char** argv)
 	cout << " FAILED: Invalid hash\n";
 	cerr << "Aborting.\n";
 #endif
-	goto end;
+	return 1;
       } else {
 #ifndef SILENT
 	cout << " OK\n";
@@ -178,7 +203,5 @@ int main(int argc,char** argv)
 #endif
     system(execstr.c_str());
   }
- end:
-  fs::remove_all(path);
   return 0;
 }
