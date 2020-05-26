@@ -148,12 +148,7 @@ struct DirTree
     fs::remove_all(path);
   }
 
-  Path& operator &()
-  {
-    return path;
-  }
-
-  operator Path()
+  const Path& operator &()
   {
     return path;
   }
@@ -180,7 +175,7 @@ int main(int argc,char** argv)
     {
       auto data = get_data(i);
 #ifndef SILENT
-      cout << " <- " << DATA_NAMES[i] << " (" << DATA_LENGTHS[i] << ")";
+      cout << " <- " << DATA_NAMES[i] << " (" << DATA_LENGTHS[i] << ")" << flush;
 #endif
       if(!verify_hash(i, data, DATA_LENGTHS[i])) {
 #ifndef SILENT
@@ -189,11 +184,11 @@ int main(int argc,char** argv)
 #endif
 	return 1;
       } else {
+	write_to_file(&tree / DATA_NAMES[i], data, DATA_LENGTHS[i]);
 #ifndef SILENT
 	cout << " OK\n";
 #endif
       }
-      write_to_file(path / DATA_NAMES[i], data, DATA_LENGTHS[i]);
     }
 
   if(DATA_EXEC_AFTER) {
