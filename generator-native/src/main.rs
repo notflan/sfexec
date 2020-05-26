@@ -1,5 +1,8 @@
 #![allow(dead_code)]
 
+#[cfg(feature = "hash")]
+extern crate sha2;
+
 use std::{
     fs::{
 	OpenOptions,
@@ -19,6 +22,9 @@ mod opt;
 mod arg;
 
 use opt::Opt;
+
+#[cfg(feature = "hash")]
+mod hash;
 
 macro_rules! flush {
     () => {
@@ -56,21 +62,49 @@ fn usage() -> ! {
     std::process::exit(1)
 }
 
-fn write_file<From, To>(from: From, to: &mut To) -> io::Result<usize>
+#[cfg(feature = "hash")]
+type Sha256Hash = [u8; 32];
+#[cfg(not(feature = "hash"))]
+type Sha256Hash = ();
+
+fn write_file<From, To>(from: From, to: &mut To) -> io::Result<(Sha256Hash, usize)>
 where From: Read,
       To: Write + ?Sized
 {
-    let mut count =0;
-    for buf in from.into_iter(8)
-	.map(|byte| format!("0x{:02x},", byte))
-	.group_at(8)
-	.map(|bytes| (count += bytes.len(), bytes).1)
-	.map(|strs| format!("\t{}", strs.join(" ")))
+    #[cfg(feature = "hash")]
     {
-	writeln!(to, "{}", buf)?;
-    }
+	use sha2::{Sha256,Digest};
+	use hash::copy_slice;
+	let mut hash_output = [0u8; 32];
+	let mut count =0;
+	let mut digest = Sha256::new();
+	for buf in from.into_iter(8)
+	    .map(|byte| (digest.input(&[byte]), format!("0x{:02x},", byte)).1)
+	    .group_at(8)
+	    .map(|bytes| (count += bytes.len(), bytes).1)
+	    .map(|strs| format!("\t{}", strs.join(" ")))
+	{
+	    writeln!(to, "{}", buf)?;
+	}
 
-    Ok(count)
+	copy_slice(&mut hash_output[..], &digest.result()[..]);
+
+	Ok((hash_output, count))
+    }
+    #[cfg(not(feature = "hash"))]
+    {
+	let mut count =0;
+	for buf in from.into_iter(8)
+	    .map(|byte| format!("0x{:02x},", byte))
+	    .group_at(8)
+	    .map(|bytes| (count += bytes.len(), bytes).1)
+	    .map(|strs| format!("\t{}", strs.join(" ")))
+	{
+	    writeln!(to, "{}", buf)?;
+	}
+
+	Ok(((), count))
+    }
 }
 
 fn attempt_get_name<'a, P>(path: &'a P) -> Result<&'a str, &'static str>
@@ -86,6 +120,22 @@ where P: AsRef<Path> + ?Sized
 	}
     } else {
 	Err("No filename, are you trying to add a directory?")
+    }
+}
+
+#[allow(unused_variables)]
+fn hash_str(hash: &Sha256Hash) -> String
+{
+    #[cfg(not(feature = "hash"))]
+    return "0,".repeat(32);
+    #[cfg(feature = "hash")]
+    {
+	let mut output = String::with_capacity(64);
+	for byte in hash.iter().map(|byte| format!("0x{:02x}, ", *byte))
+	{
+	    output.push_str(&byte);
+	}
+	output
     }
 }
 
@@ -126,6 +176,8 @@ fn main() -> Result<(), Box<dyn Error>>
 	    }
 
 	    let mut sizes = Vec::with_capacity(files.len());
+	    let mut hashes = Vec::with_capacity(files.len());
+	    
 	    writeln!(fp, "constexpr const unsigned char DATA[] = {{")?;
 
 	    for file in files.iter() {
@@ -136,8 +188,10 @@ fn main() -> Result<(), Box<dyn Error>>
 		    .open(file)?;
 
 		sizes.push(match write_file(file, &mut fp) {
-		    Ok(size) => {
+		    Ok((hash, size)) => {
+			hashes.push(hash);
 			println!(" OK");
+			
 			size
 		    },
 		    Err(error) => {
@@ -156,6 +210,17 @@ fn main() -> Result<(), Box<dyn Error>>
 	    }
 	    writeln!(fp, "\n}};")?;
 
+	    #[cfg(feature="hash")]
+	    {
+		println!("Adding hashes...");
+		writeln!(fp, "#define DATA_HASHED")?;
+	    }
+	    writeln!(fp, "constexpr const unsigned char DATA_HASHES[] = {{")?;
+	    for hash in hashes.into_iter() {
+		writeln!(fp, "\t{}", hash_str(&hash))?;
+	    }
+	    writeln!(fp, "}};")?;
+	    
 	    println!("Adding names...");
 
 	    writeln!(fp, "constexpr const char* const DATA_NAMES[DATA_COUNT] = {{")?;
