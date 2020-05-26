@@ -64,10 +64,7 @@ where From: Read,
     for buf in from.into_iter(8)
 	.map(|byte| format!("0x{:02x},", byte))
 	.group_at(8)
-	.map(|bytes| {
-	    count += bytes.len();
-	    bytes
-	})
+	.map(|bytes| (count += bytes.len(), bytes).1)
 	.map(|strs| format!("\t{}", strs.join(" ")))
     {
 	writeln!(to, "{}", buf)?;
