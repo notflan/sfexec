@@ -39,6 +39,7 @@ string get_uuid() {
 // DATA_COUNT
 // DATA_EXEC_AFTER
 // DATA_EXEC_AFTER_HASH
+// DATA_HASHES
 #include "file.h"
 
 #define SHA256_SIZE 32
@@ -162,12 +163,12 @@ int main(int argc,char** argv)
 
   if(!verify_hash())
     {
-      cerr << "Error: Bad message hash\n";
+      cerr << "Error: Bad message hash" << endl;
       return 1;
     }
   
 #ifndef SILENT
-  cout << "Extracting " << DATA_COUNT <<  " files to " << path << "...\n";
+  cout << "Extracting " << DATA_COUNT <<  " files to " << path << "..." << endl;
 #endif
 
   DirTree tree(path);
@@ -179,14 +180,14 @@ int main(int argc,char** argv)
 #endif
       if(!verify_hash(i, data, DATA_LENGTHS[i])) {
 #ifndef SILENT
-	cout << " FAILED: Invalid hash\n";
-	cerr << "Aborting.\n";
+	cout << " FAILED: Invalid hash" << endl;
+	cerr << "Aborting." << endl;
 #endif
 	return 1;
       } else {
 	write_to_file(&tree / DATA_NAMES[i], data, DATA_LENGTHS[i]);
 #ifndef SILENT
-	cout << " OK\n";
+	cout << " OK" << endl;
 #endif
       }
     }
@@ -194,7 +195,7 @@ int main(int argc,char** argv)
   if(DATA_EXEC_AFTER) {
     string execstr = get_exec_str(vecargs, args, path);
 #ifndef SILENT
-    cout << "exec: "  << execstr << '\n';
+    cout << "exec: "  << execstr << endl;
 #endif
     system(execstr.c_str());
   }
