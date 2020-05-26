@@ -11,7 +11,7 @@ $SCRIPTPATH/generator -o "$SCRIPTPATH/file.h" "$@" || exit 1
 
 echo "Compiling binary..."
 
-g++ -I$SCRIPTPATH/include/ -w --std=c++17 "$SCRIPTPATH/main.cpp" "$SCRIPTPATH/sha256_literal/sha256.cpp" -o sfexec
+g++ -I$SCRIPTPATH/include/ -w --std=c++20 "$SCRIPTPATH/main.cpp" "$SCRIPTPATH/sha256_literal/sha256.cpp" -o sfexec
 
 rm "$SCRIPTPATH/file.h"
 

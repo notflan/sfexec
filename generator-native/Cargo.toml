@@ -1,6 +1,6 @@
 [package]
 name = "generator-native"
-version = "0.2.0"
+version = "1.0.0"
 authors = ["Avril <flanchan@cumallover.me>"]
 license = "GPL 3.0"
 edition = "2018"

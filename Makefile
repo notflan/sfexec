@@ -1,4 +1,4 @@
-VERSION:= v0.2.0
+VERSION:= v1.0.0
 FEATURES:= --features hash
 
 all: clean deps sign trust
@@ -14,10 +14,18 @@ trust:
 	fi
 	ln -sf generator-$(VERSION) generator
 
+
+generator-no-hash:
+	cd generator-native && cargo build --release
+	ln -sf generator-native/target/release/generator-native generator
+	cp -f `readlink generator` ./generator-$(VERSION)
+
+
 generator:
 	cd generator-native && cargo build --release $(FEATURES)
 	ln -sf generator-native/target/release/generator-native generator
 	cp -f `readlink generator` ./generator-$(VERSION)
+
 
 sign: generator
 	sha256sum ./generator-$(VERSION) | cut -d\  -f1 > generator-$(VERSION).sha256

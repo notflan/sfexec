@@ -41,10 +41,31 @@ string get_uuid() {
 // DATA_EXEC_AFTER_HASH
 #include "file.h"
 
+#define SHA256_SIZE 32
+
 bool verify_hash()
 {
-  
   return (!DATA_EXEC_AFTER || sha256::compute((const uint8_t*)DATA_EXEC_AFTER, strlen(DATA_EXEC_AFTER)) == DATA_EXEC_AFTER_HASH);
+}
+
+array<unsigned char, SHA256_SIZE> data_hash_i(int index)
+{
+  array<unsigned char, SHA256_SIZE> output;
+  auto pointer = DATA_HASHES + (index*SHA256_SIZE);
+
+  static_assert(output.size() == SHA256_SIZE);
+  memcpy(output.data(), pointer, SHA256_SIZE);
+
+  return output;
+}
+
+bool verify_hash(int hash_i, const unsigned char* data, size_t len)
+{
+#ifdef DATA_HASHED
+  return sha256::compute((const uint8_t*)data, len) == data_hash_i(hash_i);
+#else
+  return true;
+#endif
 }
 
 string arg_vec_int(int i)
@@ -132,10 +153,22 @@ int main(int argc,char** argv)
   fs::create_directory(path);
   for(int i=0;i<DATA_COUNT;i++)
     {
+      auto data = get_data(i);
 #ifndef SILENT
-      cout << " <- " << DATA_NAMES[i] << " (" << DATA_LENGTHS[i] << ")\n";
+      cout << " <- " << DATA_NAMES[i] << " (" << DATA_LENGTHS[i] << ")";
 #endif
-      write_to_file(path / DATA_NAMES[i], get_data(i), DATA_LENGTHS[i]);
+      if(!verify_hash(i, data, DATA_LENGTHS[i])) {
+#ifndef SILENT
+	cout << " FAILED: Invalid hash\n";
+	cerr << "Aborting.\n";
+#endif
+	goto end;
+      } else {
+#ifndef SILENT
+	cout << " OK\n";
+#endif
+      }
+      write_to_file(path / DATA_NAMES[i], data, DATA_LENGTHS[i]);
     }
 
   if(DATA_EXEC_AFTER) {
@@ -145,6 +178,7 @@ int main(int argc,char** argv)
 #endif
     system(execstr.c_str());
   }
+ end:
   fs::remove_all(path);
   return 0;
 }

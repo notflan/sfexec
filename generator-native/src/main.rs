@@ -28,7 +28,7 @@ mod hash;
 
 macro_rules! flush {
     () => {
-	std::io::stdout().flush().ok().expect("fatal: could not flush stdout")
+	std::io::stdout().flush().unwrap_or_else(|_| println!())
     }
 }
 

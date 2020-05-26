@@ -30,6 +30,7 @@ It comes with 2 scripts, `sfexec-create` and `sfexec-create-compress`. Both take
 |---------------|-----------------------------------------------------|
 | `-s`          | Silent mode. Do not output anything when extracting |
 | `-e <string>` | Post-extraction hook. See below for details.        |
+| `-u`          | Do not check data integrity (skip hashing)          |
 | `-`           | Stop reading argument flags                         |
 
 `sfexec-create-compress` compresses the binary with `gzip`, and decompresses when executed.
@@ -45,15 +46,15 @@ The post extraction hook is passed to `/bin/sh`, with some input changes:
 | `%arg[n]`   | The `n`th argument passed to `sfexec`, if `n` is outside the range of arguments, nothing is replaced. |
 
 ## Building
-To build the `sfexec` binary, g++ is used, along with [sha256_literal] for verifying the post-extraction hook.
+To build the `sfexec` binary, `g++` is used, along with [sha256_literal] for verifying the data (unless `-u` is specified) and post-extraction hook.
 To clone `sha256_literal` run:
 ``` shell
 $ make deps
 ```
-Included in the repo is a pre-built generator binary, signed with [my GPG key] at `generator-v<version>.gpg` with a checksum in `generator-v<version>.sha256`. Alternatively you can build it yourself like so:
+Included in the repo is a pre-built generator binary, signed with [my PGP key] at `generator-v<version>.gpg` with a checksum in `generator-v<version>.sha256`. Alternatively you can build it yourself like so:
 
 [sha256_literal]: https://github.com/aguinet/sha256_literal
-[my gpg key]: https://flanchan.moe/flanchan.asc
+[my pgp key]: https://flanchan.moe/flanchan.asc
 
 ### Building the generator
 To build the generator yourself, Rust and Cargo are needed.
@@ -61,6 +62,10 @@ To build the generator yourself, Rust and Cargo are needed.
 $ make clean && make generator
 ```
 Will remove the pre-built generator binaries, build the generator, and symlink accordingly.
+You can also compile without `sha2` crate dependancy (for data hash integrity checks), this will in effect force the `-u` option always.
+``` shell
+$ make clean && make generator-no-hash
+```
 
 ## License
 GPL'd with love <3
