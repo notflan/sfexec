@@ -1,4 +1,5 @@
 VERSION:= v0.2.0
+FEATURES:= --features hash
 
 all: clean deps sign trust
 
@@ -14,7 +15,7 @@ trust:
 	ln -sf generator-$(VERSION) generator
 
 generator:
-	cd generator-native && cargo build --release
+	cd generator-native && cargo build --release $(FEATURES)
 	ln -sf generator-native/target/release/generator-native generator
 	cp -f `readlink generator` ./generator-$(VERSION)
 

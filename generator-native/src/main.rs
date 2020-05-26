@@ -47,7 +47,7 @@ fn usage() -> ! {
     {
 	let prog = &arg::program_name();
 	version(true);
-	println!("Usage: {} [-s] [-e <exec string>] [-o <output file>] [-] <files...>", prog);
+	println!("Usage: {} [-s] [-e <exec string>] [-o <output file>] [-u] [-] <files...>", prog);
 	println!("Usage: {} -h", prog);
 	println!("Usage: {} -v|-V", prog);
 	println!();
@@ -58,6 +58,10 @@ fn usage() -> ! {
 	println!(" -s\t\tSilent mode.");
 	println!(" -e <exec>\tScript to run after extraction.");
 	println!(" -o <file>\tOutput filename.");
+	#[cfg(feature = "hash")]
+	println!(" -u\t\tUnchecked mode. Do not compute hashes of inputs.");
+	#[cfg(not(feature = "hash"))]
+	println!(" -u\t\tUnchecked mode. (default as generator is not compiled with `hash` feature).");
     }
     std::process::exit(1)
 }
@@ -67,7 +71,11 @@ type Sha256Hash = [u8; 32];
 #[cfg(not(feature = "hash"))]
 type Sha256Hash = ();
 
-fn write_file<From, To>(from: From, to: &mut To) -> io::Result<(Sha256Hash, usize)>
+const WF_BUFFER_SIZE: usize = 1024;
+const WF_GROUP_SIZE: usize = 16;
+
+#[allow(unused_variables)]
+fn write_file<From, To>(from: From, to: &mut To, hash: bool) -> io::Result<(Sha256Hash, usize)>
 where From: Read,
       To: Write + ?Sized
 {
@@ -78,25 +86,32 @@ where From: Read,
 	let mut hash_output = [0u8; 32];
 	let mut count =0;
 	let mut digest = Sha256::new();
-	for buf in from.into_iter(8)
-	    .map(|byte| (digest.input(&[byte]), format!("0x{:02x},", byte)).1)
-	    .group_at(8)
+	let lambda: Box<dyn FnMut(u8) -> String> = if hash {
+	    Box::new(|byte| (digest.input(&[byte]), format!("0x{:02x},", byte)).1)
+	} else {
+	    Box::new(|byte| format!("0x{:02x},", byte))
+	};
+	for buf in from.into_iter(WF_BUFFER_SIZE)
+	    .map(lambda)
+	    .group_at(WF_GROUP_SIZE)
 	    .map(|bytes| (count += bytes.len(), bytes).1)
 	    .map(|strs| format!("\t{}", strs.join(" ")))
 	{
 	    writeln!(to, "{}", buf)?;
 	}
 
-	copy_slice(&mut hash_output[..], &digest.result()[..]);
-
+	if hash {
+	    copy_slice(&mut hash_output[..], &digest.result()[..]);
+	}
+	
 	Ok((hash_output, count))
     }
     #[cfg(not(feature = "hash"))]
     {
 	let mut count =0;
-	for buf in from.into_iter(8)
+	for buf in from.into_iter(WF_BUFFER_SIZE)
 	    .map(|byte| format!("0x{:02x},", byte))
-	    .group_at(8)
+	    .group_at(WF_GROUP_SIZE)
 	    .map(|bytes| (count += bytes.len(), bytes).1)
 	    .map(|strs| format!("\t{}", strs.join(" ")))
 	{
@@ -152,6 +167,7 @@ fn main() -> Result<(), Box<dyn Error>>
 		_ => None
 	    });
 	    let silent = options.has_tag(&Opt::Silent);
+	    let no_hash = options.has_tag(&Opt::NoHash);
 
 	    println!("Writing to {}...", output);
 	    let mut fp = OpenOptions::new()
@@ -187,7 +203,7 @@ fn main() -> Result<(), Box<dyn Error>>
 		    .read(true)
 		    .open(file)?;
 
-		sizes.push(match write_file(file, &mut fp) {
+		sizes.push(match write_file(file, &mut fp, !no_hash) {
 		    Ok((hash, size)) => {
 			hashes.push(hash);
 			println!(" OK");
@@ -211,6 +227,7 @@ fn main() -> Result<(), Box<dyn Error>>
 	    writeln!(fp, "\n}};")?;
 
 	    #[cfg(feature="hash")]
+	    if !no_hash
 	    {
 		println!("Adding hashes...");
 		writeln!(fp, "#define DATA_HASHED")?;
@@ -237,7 +254,7 @@ fn main() -> Result<(), Box<dyn Error>>
 		    }
 		};
 		
-		match write!(fp, "\t\"{}\",", translate::c_escape(file)) {
+		match writeln!(fp, "\t\"{}\",", translate::c_escape(file)) {
 		    Err(error) => {
 			println!(" FAILED: write: {}", error);
 
@@ -247,7 +264,7 @@ fn main() -> Result<(), Box<dyn Error>>
 		};
 		println!(" OK");
 	    }
-	    writeln!(fp, "\n}};")?;
+	    writeln!(fp, "}};")?;
 	},
 	arg::OperationMode::Help => {
 	    usage();

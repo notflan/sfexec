@@ -48,6 +48,9 @@ pub fn parse() -> Result<OperationMode, &'static str>
 		}
 		i += 1;
 	    },
+	    "-u" if look => {
+		opt |= Opt::NoHash;
+	    },
 	    "-" if look => look=false,
 	    other => {
 		files.push(other.to_owned());

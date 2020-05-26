@@ -9,6 +9,7 @@ pub enum Opt
     Silent,
     Execute(String),
     Output(String),
+    NoHash,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
