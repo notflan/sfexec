@@ -3,9 +3,6 @@ use std::{
 	Read,
     },
 };
-use heaparray::{
-    heap,
-};
 
 pub struct BufferedReadIter<F>
 where F: Read
@@ -49,7 +46,7 @@ impl<F: Read> Iterator for BufferedReadIter<F>
 impl<F: Read> BufferedReadIter<F>
 {
     pub fn new(iter: F, buffer_len: usize) -> Self {
-	let buffer = heap![u8; buffer_len].into_box();
+	let buffer = vec![0u8; buffer_len].into_boxed_slice();
 	Self {
 	    iter,
 	    buffer_len: 0,

@@ -2,21 +2,4 @@
 # It is not intended for manual editing.
 [[package]]
 name = "generator-native"
-version = "0.1.0"
-dependencies = [
- "heaparray",
-]
-
-[[package]]
-name = "heaparray"
-version = "0.1.0"
-source = "git+https://github.com/notflan/heaparray#6b57c19cf82a71f6bd6e566be7cf36ef1926def7"
-dependencies = [
- "libc",
-]
-
-[[package]]
-name = "libc"
-version = "0.2.70"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3baa92041a6fec78c687fa0cc2b3fae8884f743d672cf551bed1d6dac6988d0f"
+version = "0.2.0"

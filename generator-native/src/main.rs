@@ -1,7 +1,5 @@
 #![allow(dead_code)]
 
-extern crate heaparray;
-
 use std::{
     fs::{
 	OpenOptions,
