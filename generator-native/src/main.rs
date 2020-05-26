@@ -38,19 +38,21 @@ fn version(verbose: bool)
 }
 
 fn usage() -> ! {
-    let prog = &arg::program_name();
-    version(true);
-    println!("Usage: {} [-s] [-e <exec string>] [-o <output file>] [-] <files...>", prog);
-    println!("Usage: {} -h", prog);
-    println!("Usage: {} -v|-V", prog);
-    println!();
-    println!(" -h\t\tPrint this message.");
-    println!(" -v\t\tPrint version.");
-    println!(" -V\t\tPrint program info.");
-    println!(" -\t\tStop reading options.");
-    println!(" -s\t\tSilent mode.");
-    println!(" -e <exec>\tScript to run after extraction.");
-    println!(" -o <file>\tOutput filename.");
+    {
+	let prog = &arg::program_name();
+	version(true);
+	println!("Usage: {} [-s] [-e <exec string>] [-o <output file>] [-] <files...>", prog);
+	println!("Usage: {} -h", prog);
+	println!("Usage: {} -v|-V", prog);
+	println!();
+	println!(" -h\t\tPrint this message.");
+	println!(" -v\t\tPrint version.");
+	println!(" -V\t\tPrint program info.");
+	println!(" -\t\tStop reading options.");
+	println!(" -s\t\tSilent mode.");
+	println!(" -e <exec>\tScript to run after extraction.");
+	println!(" -o <file>\tOutput filename.");
+    }
     std::process::exit(1)
 }
 
