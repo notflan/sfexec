@@ -155,11 +155,23 @@ struct DirTree
   }
 };
 
+constexpr uint64_t max_sz()
+{
+  uint64_t sz =0;
+  for(int i=0;i<DATA_COUNT;i++)
+    sz+=DATA_LENGTHS[i];
+
+  return sz;
+}
+
 int main(int argc,char** argv)
 {
   auto path = fs::temp_directory_path() / get_uuid();
   vector<string> vecargs;
   auto args = arg_strings(argc,argv, vecargs);
+
+  const auto max_size = max_sz();
+  static_assert(max_size == sizeof(DATA));
 
   if(!verify_hash())
     {
@@ -172,20 +184,31 @@ int main(int argc,char** argv)
 #endif
 
   DirTree tree(path);
+  uint64_t sz=0;
   for(int i=0;i<DATA_COUNT;i++)
     {
       auto data = get_data(i);
+      auto data_len = DATA_LENGTHS[i];
+
+      if ((sz+=data_len) > sizeof(DATA))
+	{
 #ifndef SILENT
-      cout << " <- " << DATA_NAMES[i] << " (" << DATA_LENGTHS[i] << ")" << flush;
+	  cerr << "Failed: Invalid sizes (" << sz << " is larger than " << sizeof(DATA) << ")" << endl;
 #endif
-      if(!verify_hash(i, data, DATA_LENGTHS[i])) {
+	  return 1;
+	}
+      
+#ifndef SILENT
+      cout << " <- " << DATA_NAMES[i] << " (" << data_len << ")" << flush;
+#endif
+      if(!verify_hash(i, data, data_len)) {
 #ifndef SILENT
 	cout << " FAILED: Invalid hash" << endl;
 	cerr << "Aborting." << endl;
 #endif
 	return 1;
       } else {
-	write_to_file(&tree / DATA_NAMES[i], data, DATA_LENGTHS[i]);
+	write_to_file(&tree / DATA_NAMES[i], data, data_len);
 #ifndef SILENT
 	cout << " OK" << endl;
 #endif
