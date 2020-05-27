@@ -138,15 +138,22 @@ const unsigned char* get_data(int i)
 template<typename Path>
 struct DirTree
 {
+  bool clean=true;
   const Path path;
-  DirTree(const Path input): path(input)
+  DirTree(const Path input) noexcept : path(input)
   {
-    fs::create_directory(input);
+    fs::create_directory(path);
   }
+  DirTree(DirTree&& other) noexcept : path(other.path)
+  {
+    other.clean=false;
+  }
+  DirTree(const DirTree& _) noexcept = delete;
 
   ~DirTree()
   {
-    fs::remove_all(path);
+    if(clean)
+      fs::remove_all(path);
   }
 
   const Path& operator &()
